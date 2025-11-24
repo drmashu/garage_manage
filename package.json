@@ -1,0 +1,21 @@
+{
+    "dependencies": {
+        "@matter/main": "0.15.6",
+        "pigpio": "^3.3.1"
+    },
+    "devDependencies": {
+        "@types/node": "^24.1.0",
+        "typescript": "~5.8.3"
+    },
+    "name": "matter-app",
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "prepare": "tsc",
+        "build": "tsc",
+        "app": "node --enable-source-maps dist/IlluminatedRollerShade.js",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "clean": "node -e 'fs.rmSync(\"dist\", { recursive: true, force: true })'"
+    },
+    "description": "Composed device with Window covering and a light endpoint that logs changes"
+}
