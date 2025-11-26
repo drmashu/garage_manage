@@ -6,78 +6,152 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { WindowCoveringDevice } from "@matter/main/devices/window-covering";
-import { MovementDirection, MovementType, WindowCoveringServer } from "@matter/main/behaviors/window-covering";
+import { WindowCovering } from "@matter/main/clusters/window-covering";
+import {
+  MovementDirection,
+  MovementType,
+  WindowCoveringServer,
+} from "@matter/main/behaviors/window-covering";
+import { Gpio } from "pigpio";
+import * as Consts from "./consts.js"
 
 const ShutterServer = WindowCoveringServer.with("Lift", "PositionAwareLift");
 
-const GPIO_SW_SHUTTER_UP = 14;
-const GPIO_SW_SHUTTER_DOWN = 15;
-const GPIO_DEV_SHUTTER_UP = 22;
-const GPIO_DEV_SHUTTER_DOWN = 23;
+/** シャッター開ボタンのGPIOピンNo */
+const GPIO_BTN_SHUTTER_OPEN = 14;
+/** シャッター閉ボタンのGPIOピンNo */
+const GPIO_BTN_SHUTTER_CLOSE = 15;
 
+/** 実機側シャッター開ボタンのGPIOピンNo */
+const GPIO_DEV_SHUTTER_OPEN = 22;
+/** 実機側シャッター閉ボタンのGPIOピンNo */
+const GPIO_DEV_SHUTTER_CLOSE = 23;
+
+/** HC-SR04のトリガーピンのGPIOピンNo */
 const GPIO_HCSR04_TRIGGER = 20;
+/** HC-SR04のエコーピンのGPIOピンNo */
 const GPIO_HCSR04_ECHO = 21;
 
+const BTN_SHUTTER_OPEN = new Gpio(GPIO_BTN_SHUTTER_OPEN, {
+  mode: Gpio.INPUT,
+  pullUpDown: Gpio.PUD_UP,
+  alert: true,
+});
+
+const BTN_SHUTTER_CLOSE = new Gpio(GPIO_BTN_SHUTTER_CLOSE, {
+  mode: Gpio.INPUT,
+  pullUpDown: Gpio.PUD_UP,
+  alert: true,
+});
+
+const DEV_SHUTTER_OPEN = new Gpio(GPIO_DEV_SHUTTER_OPEN, {
+  mode: Gpio.OUTPUT,
+  pullUpDown: Gpio.PUD_DOWN,
+});
+
+const DEV_SHUTTER_CLOSE = new Gpio(GPIO_DEV_SHUTTER_CLOSE, {
+  mode: Gpio.OUTPUT,
+  pullUpDown: Gpio.PUD_DOWN,
+});
+
 /**
- * 
+ *
  */
 export class Shutter extends ShutterServer {
-    
-    /**
-     * 初期化処理
-     */
-    override initialize(): MaybePromise {
+  /**
+   * 初期化処理
+   */
+  override initialize() {
+    BTN_SHUTTER_OPEN.glitchFilter(Consts.GLITCH_INTERVAL_NS);
+    BTN_SHUTTER_OPEN.on("alert", (level: any, tickl: any) => {
+      this.handleOpenButton();
+    });
 
+    BTN_SHUTTER_CLOSE.glitchFilter(Consts.GLITCH_INTERVAL_NS);
+    BTN_SHUTTER_CLOSE.on("alert", (levell: any, tickl: any) => {
+      this.handleCloseButton();
+    });
 
-        return super.initialize();
+    return super.initialize();
+  }
+
+  /**
+   * シャッター開ボタン押下
+   */
+  protected handleOpenButton() {
+    console.log("Push Shutter Open Button");
+    if (this.state.operationalStatus.lift == WindowCovering.MovementStatus.Stopped) {
+      this.state.operationalStatus.lift = WindowCovering.MovementStatus.Opening;
+      // シャッター開度測定開始
+
+    } else {
+      this.state.operationalStatus.lift = WindowCovering.MovementStatus.Stopped;
     }
+    // シャッター開信号発信
+    DEV_SHUTTER_OPEN.trigger(Consts.BTN_TRIGGER_MS, 1);
+  }
 
-    /**
-     * シャッター操作
-     */
-    override async handleMovement(
-        type: MovementType,
-        reversed: boolean,
-        direction: MovementDirection,
-        targetPercent100ths?: number,
-    ) : MaybePromise {
+  /**
+   * シャッター閉ボタン押下
+   */
+  protected handleCloseButton() {
+    console.log("Push Shutter Close Button");
+    if (this.state.operationalStatus.lift == WindowCovering.MovementStatus.Stopped) {
+      this.state.operationalStatus.lift = WindowCovering.MovementStatus.Closing;
+      // シャッター開度測定開始
+    } else {
+      this.state.operationalStatus.lift = WindowCovering.MovementStatus.Stopped;
+    }
+    // シャッター閉信号発信
+    DEV_SHUTTER_CLOSE.trigger(Consts.BTN_TRIGGER_MS, 1);
+  }
 
-        if (this.internal.disableOperationalModeHandling) {
-            return;
-        }
+  /**
+   * シャッター操作
+   */
+  override async handleMovement(
+    type: MovementType,
+    reversed: boolean,
+    direction: MovementDirection,
+    targetPercent100ths?: number
+  ) {
+    console.log(
+      "Move shatter",
+      direction === MovementDirection.Open ? "Open" : "Close",
+      targetPercent100ths !== undefined ? `${targetPercent100ths / 100}%` : ""
+    );
 
-        console.log(
-            "Move shatter",
-            direction === MovementDirection.Open ? "Open" : "Close",
-            targetPercent100ths !== undefined ? `${targetPercent100ths / 100}%` : "",
-        );
-
-        switch(direction) {
-            case MovementDirection.Open:
-            // シャッターを開く
-                break;
-            case MovementDirection.Close:
-            // シャッターを閉じる
-                break;
-            case MovementDirection.DefinedByPosition:
-            // 指定距離までシャッターを動かす
-                break;
-        }
-   }
-
-    /**
-     * キャリブレーション実行
-     */
-    override executeCalibration(): MaybePromise {
-        // シャッターを開ける
-        // シャッターが止まるのを待つ
-        // シャッターの距離を測る
-        // 全開時の距離を記録する
-
+    switch (direction) {
+      case MovementDirection.Open:
+        // シャッターを開く
+        break;
+      case MovementDirection.Close:
         // シャッターを閉じる
-        // シャッターが止まるのを待つ
-        // シャッターの距離を測る
-        // 全開時の距離を記録する
+        break;
+      case MovementDirection.DefinedByPosition:
+        // 指定距離までシャッターを動かす
+        break;
     }
-}
+  }
 
+  /**
+   * シャッター停止
+   */
+  override handleStopMovement() {
+    super.handleStopMovement();
+  }
+
+  /**
+   * キャリブレーション実行
+   */
+  override executeCalibration() {
+    // シャッターを開ける
+    // シャッターが止まるのを待つ
+    // シャッターの距離を測る
+    // 全開時の距離を記録する
+    // シャッターを閉じる
+    // シャッターが止まるのを待つ
+    // シャッターの距離を測る
+    // 全開時の距離を記録する
+  }
+}
