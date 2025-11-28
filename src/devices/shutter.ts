@@ -14,6 +14,7 @@ import {
 } from "@matter/main/behaviors/window-covering";
 import { Gpio } from "pigpio";
 import * as Consts from "./consts.js"
+import {HCSR04} from "../sensors/hcsr04.js"
 
 const ShutterServer = WindowCoveringServer.with("Lift", "PositionAwareLift");
 
@@ -54,22 +55,30 @@ const DEV_SHUTTER_CLOSE = new Gpio(GPIO_DEV_SHUTTER_CLOSE, {
   pullUpDown: Gpio.PUD_DOWN,
 });
 
+const SENSOR = new HCSR04(GPIO_HCSR04_TRIGGER, GPIO_HCSR04_ECHO);
+
 /**
  *
  */
 export class Shutter extends ShutterServer {
+
+
   /**
    * 初期化処理
    */
   override initialize() {
     BTN_SHUTTER_OPEN.glitchFilter(Consts.GLITCH_INTERVAL_NS);
     BTN_SHUTTER_OPEN.on("alert", (level: any, tickl: any) => {
-      this.handleOpenButton();
+      if (level == 0) {
+        this.handleOpenButton();
+      }
     });
 
     BTN_SHUTTER_CLOSE.glitchFilter(Consts.GLITCH_INTERVAL_NS);
-    BTN_SHUTTER_CLOSE.on("alert", (levell: any, tickl: any) => {
-      this.handleCloseButton();
+    BTN_SHUTTER_CLOSE.on("alert", (level: any, tickl: any) => {
+      if (level == 0) {
+        this.handleCloseButton();
+      }
     });
 
     return super.initialize();
@@ -87,6 +96,13 @@ export class Shutter extends ShutterServer {
     } else {
       this.state.operationalStatus.lift = WindowCovering.MovementStatus.Stopped;
     }
+    this.openShutter();
+  }
+  
+  /**
+   * シャッターを開ける
+   */
+  protected openShutter() {
     // シャッター開信号発信
     DEV_SHUTTER_OPEN.trigger(Consts.BTN_TRIGGER_MS, 1);
   }
@@ -102,10 +118,16 @@ export class Shutter extends ShutterServer {
     } else {
       this.state.operationalStatus.lift = WindowCovering.MovementStatus.Stopped;
     }
-    // シャッター閉信号発信
-    DEV_SHUTTER_CLOSE.trigger(Consts.BTN_TRIGGER_MS, 1);
+    this.closeShutter();
   }
 
+  /**
+   * シャッターを閉じる
+   */
+  protected closeShutter() {
+    // シャッター閉信号発信
+    DEV_SHUTTER_CLOSE.trigger(Consts.BTN_TRIGGER_MS, 1);
+}
   /**
    * シャッター操作
    */
@@ -124,9 +146,11 @@ export class Shutter extends ShutterServer {
     switch (direction) {
       case MovementDirection.Open:
         // シャッターを開く
+        this.openShutter();
         break;
       case MovementDirection.Close:
         // シャッターを閉じる
+        this.closeShutter();
         break;
       case MovementDirection.DefinedByPosition:
         // 指定距離までシャッターを動かす
@@ -138,6 +162,10 @@ export class Shutter extends ShutterServer {
    * シャッター停止
    */
   override handleStopMovement() {
+    if (this.state.operationalStatus.lift != WindowCovering.MovementStatus.Stopped){
+      // シャッター動作中であれば、いずれかのボタン操作で停止する
+      this.openShutter();
+    }
     super.handleStopMovement();
   }
 

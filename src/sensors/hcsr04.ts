@@ -1,9 +1,17 @@
-// sensors/HCSR04.ts
+/**
+ * @license
+ * Copyright 2025 KGS Lab. NAGASAWA Takahiro
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Gpio } from 'pigpio';
 
+/**
+ * HC-SR04を使用して距離を計測するクラス
+ */
 export class HCSR04 {
-  private trigger: any;
-  private echo: any;
+  private trigger: Gpio;
+  private echo: Gpio;
 
   constructor(triggerPin: number, echoPin: number) {
     this.trigger = new Gpio(triggerPin, { mode: Gpio.OUTPUT });
