@@ -7,7 +7,7 @@
         "@types/node": "^24.1.0",
         "typescript": "~5.8.3"
     },
-    "name": "matter-app",
+    "name": "garage-manage",
     "version": "0.1.0",
     "type": "module",
     "scripts": {
@@ -17,5 +17,5 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "clean": "node -e 'fs.rmSync(\"dist\", { recursive: true, force: true })'"
     },
-    "description": "Composed device with Window covering and a light endpoint that logs changes"
+    "description": "Garage Shutter & Light, Fan Controll Device."
 }
