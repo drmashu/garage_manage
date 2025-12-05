@@ -5,7 +5,7 @@
  * Copyright 2025 KGS Lab. NAGASAWA Takahiro
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Endpoint, StorageService } from "@matter/main";
+import { Endpoint, Environment, StorageService } from "@matter/main";
 import { OnOffLightDevice } from "@matter/main/devices/on-off-light";
 import { Gpio } from "pigpio";
 import * as Consts from "./consts.js"
@@ -64,6 +64,7 @@ BTN_LIGHT.glitchFilter(Consts.GLITCH_INTERVAL_NS);
 BTN_LIGHT.on("alert", async (level: any, tickl: any) => {
   if (level == 0) {
     const onOffValue = LightEndpoint.state.onOff.onOff;
+    console.log(`Push HW Btn. Light is ${onOffValue ? "ON" : "OFF"} to ${!onOffValue ? "ON" : "OFF"}`);
     await LightEndpoint.set({
       onOff: {
           onOff: !onOffValue,

@@ -32,32 +32,23 @@ const GPIO_HCSR04_TRIGGER = 12;
 /** HC-SR04のエコーピンのGPIOピンNo */
 const GPIO_HCSR04_ECHO = 13;
 
-const BTN_SHUTTER_OPEN = new Gpio(GPIO_BTN_SHUTTER_OPEN, {
-  mode: Gpio.INPUT,
-  pullUpDown: Gpio.PUD_UP,
-  alert: true,
-});
-
-const BTN_SHUTTER_CLOSE = new Gpio(GPIO_BTN_SHUTTER_CLOSE, {
-  mode: Gpio.INPUT,
-  pullUpDown: Gpio.PUD_UP,
-  alert: true,
-});
-
+/** 実機側シャッター開ボタンのGPIO */
 const DEV_SHUTTER_OPEN = new Gpio(GPIO_DEV_SHUTTER_OPEN, {
   mode: Gpio.OUTPUT,
   pullUpDown: Gpio.PUD_DOWN,
 });
 
+/** 実機側シャッター閉ボタンのGPIOピン */
 const DEV_SHUTTER_CLOSE = new Gpio(GPIO_DEV_SHUTTER_CLOSE, {
   mode: Gpio.OUTPUT,
   pullUpDown: Gpio.PUD_DOWN,
 });
 
+/** HC-SR04センサー */
 const SENSOR = new HCSR04(GPIO_HCSR04_TRIGGER, GPIO_HCSR04_ECHO);
 
 /**
- *
+ * シャッターのイベントを受ける用のサーバ
  */
 class ShutterServer extends WindowCoveringServer.with("Lift", "PositionAwareLift") {
 
@@ -140,6 +131,12 @@ export const ShutterEndpoint = new Endpoint(WindowCoveringDevice.with(ShutterSer
   id: 'shutter'
 });
 
+/** シャッター開ボタンのGPIO */
+const BTN_SHUTTER_OPEN = new Gpio(GPIO_BTN_SHUTTER_OPEN, {
+  mode: Gpio.INPUT,
+  pullUpDown: Gpio.PUD_UP,
+  alert: true,
+});
 BTN_SHUTTER_OPEN.glitchFilter(Consts.GLITCH_INTERVAL_NS);
 BTN_SHUTTER_OPEN.on("alert", async (level: any, tickl: any) => {
   if (level == 0) {
@@ -166,6 +163,12 @@ BTN_SHUTTER_OPEN.on("alert", async (level: any, tickl: any) => {
   }
 });
 
+/** シャッター閉ボタンのGPIO */
+const BTN_SHUTTER_CLOSE = new Gpio(GPIO_BTN_SHUTTER_CLOSE, {
+  mode: Gpio.INPUT,
+  pullUpDown: Gpio.PUD_UP,
+  alert: true,
+});
 BTN_SHUTTER_CLOSE.glitchFilter(Consts.GLITCH_INTERVAL_NS);
 BTN_SHUTTER_CLOSE.on("alert", async (level: any, tickl: any) => {
   if (level == 0) {
