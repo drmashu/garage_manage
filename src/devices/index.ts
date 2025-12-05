@@ -1,3 +1,3 @@
-export { Shutter } from './shutter.js';
-export { Light } from './light.js';
-export { Fan } from './fan.js';
+export * from './shutter.js';
+export * from './light.js';
+export * from './fan.js';

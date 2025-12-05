@@ -5,55 +5,132 @@
  * Copyright 2025 KGS Lab. NAGASAWA Takahiro
  * SPDX-License-Identifier: Apache-2.0
  */
-
-import { ServerNode } from "@matter/main";
-import { MovementDirection, MovementType, WindowCoveringServer } from "@matter/main/behaviors/window-covering";
+import {
+  Bytes,
+  DeviceTypeId,
+  Endpoint,
+  Environment,
+  LogDestination,
+  LogLevel,
+  Logger,
+  ServerNode,
+  StorageService,
+  Time,
+  VendorId,
+} from "@matter/main";
+import {
+  MovementDirection,
+  MovementType,
+  WindowCoveringServer,
+} from "@matter/main/behaviors/window-covering";
 
 import { WindowCoveringDevice } from "@matter/main/devices/window-covering";
 import { OnOffLightDevice } from "@matter/main/devices/on-off-light";
 import { FanDevice } from "@matter/main/devices/fan";
 
-import { Shutter,Light,Fan } from "./devices/index.js"
+import { ShutterEndpoint } from "./devices/shutter.js";
+import { LightEndpoint } from "./devices/light.js";
+//import { VentilationFanEndpoint } from "./devices/fan.js"
+
+/** Initialize configuration values */
+const {
+  deviceName,
+  vendorName,
+  passcode,
+  discriminator,
+  vendorId,
+  productName,
+  productId,
+  port,
+  uniqueId,
+} = await getConfiguration();
 
 /**
- * Our Matter node.
+ * Matter サーバノードを作成.
  */
-const node = new ServerNode({
-    id: "GarageManage001",
+const server = new ServerNode({
+  id: uniqueId,
 
-    productDescription: {
+  productDescription: {
+    name: deviceName,
+    deviceType: DeviceTypeId(WindowCoveringDevice.deviceType),
+  },
 
-    },
+  commissioning: {
+    passcode,
+    discriminator,
+  },
 
-    commissioning: {
-        passcode: 19750608,
-        discriminator: 3840,
-    },
-
-    basicInformation: {
-        vendorName: "KGS Lab.",
-        productName: "GarageManage 001",
-        vendorId: 0xfff1,
-        productId: 0x8000,
-        serialNumber: "gm001-00000001",
-    },
-
-    parts: [
-        {
-            type: WindowCoveringDevice.with(Shutter),
-            id: "shutter",
-        },
-
-        {
-            type: OnOffLightDevice.with(Light),
-            id: "light",
-        },
-
-        {
-            type: FanDevice.with(Fan),
-            id: "fan",
-        },
-    ],
+  basicInformation: {
+    vendorName,
+    productName,
+    vendorId,
+    productId,
+    serialNumber: `gm001-${uniqueId}`,
+  },
 });
 
-await node.run();
+await server.add(ShutterEndpoint);
+await server.add(LightEndpoint);
+//await server.add(VentilationFanEndpoint);
+
+await server.run();
+
+/**
+ * 設定取得
+ */
+async function getConfiguration() {
+  const environment = Environment.default;
+
+  const storageService = environment.get(StorageService);
+  console.log(`Storage location: ${storageService.location} (Directory)`);
+  const deviceStorage = (await storageService.open("device")).createContext(
+    "data"
+  );
+
+  const deviceName = "GarageManage";
+  const vendorName = "KGS Lab.";
+  const passcode =
+    environment.vars.number("passcode") ??
+    (await deviceStorage.get("passcode", 19750608));
+  const discriminator =
+    environment.vars.number("discriminator") ??
+    (await deviceStorage.get("discriminator", 3840));
+  const vendorId =
+    environment.vars.number("vendorid") ??
+    (await deviceStorage.get("vendorid", 0xfff1));
+  const productName = "GarageManage001";
+  const productId =
+    environment.vars.number("productid") ??
+    (await deviceStorage.get("productid", 0x8000));
+
+  const port = environment.vars.number("port") ?? 5540;
+
+  const nowMs = Time.nowMs().toString();
+  const uniqueId =
+    environment.vars.string("uniqueid") ??
+    (await deviceStorage.get("uniqueid", nowMs));
+
+  console.log(`uniqueId: ${uniqueId} / ${nowMs}`);
+
+  // Persist basic data to keep them also on restart
+  await deviceStorage.set({
+    passcode,
+    discriminator,
+    vendorid: vendorId,
+    productid: productId,
+    uniqueid: uniqueId,
+  });
+
+  return {
+    deviceName,
+    vendorName,
+    passcode,
+    discriminator,
+    vendorId,
+    productName,
+    productId,
+    port,
+    uniqueId,
+  };
+}
