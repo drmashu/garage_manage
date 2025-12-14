@@ -29,13 +29,13 @@ const DEV_FAN = new Gpio(GPIO_DEV_FAN, {
 /**換気扇インジケータLEDのGPIO */
 const IND_FAN = new Gpio(GPIO_IND_FAN, {
   mode: Gpio.OUTPUT,
-  pullUpDown: Gpio.PUD_UP,
+  pullUpDown: Gpio.PUD_DOWN,
 });
 
 /**
  * 照明用エンドポイントを作成.
  */
-export const FanEndpoint = new Endpoint(OnOffLightDevice, {
+export const FanEndpoint = new Endpoint(OnOffPlugInUnitDevice, {
   id: 'fan'
 });
 
@@ -43,7 +43,7 @@ export const FanEndpoint = new Endpoint(OnOffLightDevice, {
  * リモートからのON/OFFイベントの処理.
  */
 FanEndpoint.events.onOff.onOff$Changed.on((swOn: any) => {
-  console.log(`Light is now ${swOn ? "ON" : "OFF"}`);
+  console.log(`Fan is now ${swOn ? "ON" : "OFF"}`);
   if (swOn) {
     switchOn();
   } else {

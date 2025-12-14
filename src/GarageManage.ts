@@ -32,6 +32,9 @@ import { ShutterEndpoint } from "./devices/shutter.js";
 import { LightEndpoint } from "./devices/light.js";
 import { FanEndpoint } from "./devices/fan.js"
 
+const environment = Environment.default;
+const storage = environment.get(StorageService);
+
 /** Initialize configuration values */
 const {
   deviceName,
@@ -44,8 +47,6 @@ const {
   port,
   uniqueId,
 } = await getConfiguration();
-
-const storage = new StorageService("./garage-manage-storage");
 
 /**
  * Matter サーバノードを作成.
@@ -68,7 +69,6 @@ const server = new ServerNode({
     vendorId,
     productId,
     serialNumber: `gm001-${uniqueId}`,
-    storage,
   },
 });
 
@@ -82,11 +82,9 @@ await server.run();
  * 設定取得
  */
 async function getConfiguration() {
-  const environment = Environment.default;
 
-  const storageService = environment.get(StorageService);
-  console.log(`Storage location: ${storageService.location} (Directory)`);
-  const deviceStorage = (await storageService.open("device")).createContext(
+  console.log(`Storage location: ${storage.location} (Directory)`);
+  const deviceStorage = (await storage.open("device")).createContext(
     "data"
   );
 
