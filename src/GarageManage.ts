@@ -45,7 +45,8 @@ const {
   uniqueId,
 } = await getConfiguration();
 
-const storage = new StorageService("./garage-manage-storage");
+const environment = Environment.default;
+const storage = environment.get(StorageService);
 
 /**
  * Matter サーバノードを作成.
@@ -68,7 +69,6 @@ const server = new ServerNode({
     vendorId,
     productId,
     serialNumber: `gm001-${uniqueId}`,
-    storage,
   },
 });
 
@@ -82,11 +82,9 @@ await server.run();
  * 設定取得
  */
 async function getConfiguration() {
-  const environment = Environment.default;
 
-  const storageService = environment.get(StorageService);
-  console.log(`Storage location: ${storageService.location} (Directory)`);
-  const deviceStorage = (await storageService.open("device")).createContext(
+  console.log(`Storage location: ${storage.location} (Directory)`);
+  const deviceStorage = (await storage.open("device")).createContext(
     "data"
   );
 
