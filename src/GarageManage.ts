@@ -30,7 +30,7 @@ import { FanDevice } from "@matter/main/devices/fan";
 
 import { ShutterEndpoint } from "./devices/shutter.js";
 import { LightEndpoint } from "./devices/light.js";
-//import { VentilationFanEndpoint } from "./devices/fan.js"
+import { FanEndpoint } from "./devices/fan.js"
 
 /** Initialize configuration values */
 const {
@@ -45,6 +45,8 @@ const {
   uniqueId,
 } = await getConfiguration();
 
+const storage = new StorageService("./garage-manage-storage");
+
 /**
  * Matter サーバノードを作成.
  */
@@ -53,7 +55,6 @@ const server = new ServerNode({
 
   productDescription: {
     name: deviceName,
-    deviceType: DeviceTypeId(WindowCoveringDevice.deviceType),
   },
 
   commissioning: {
@@ -67,12 +68,13 @@ const server = new ServerNode({
     vendorId,
     productId,
     serialNumber: `gm001-${uniqueId}`,
+    storage,
   },
 });
 
 await server.add(ShutterEndpoint);
 await server.add(LightEndpoint);
-//await server.add(VentilationFanEndpoint);
+await server.add(FanEndpoint);
 
 await server.run();
 

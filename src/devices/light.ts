@@ -5,8 +5,8 @@
  * Copyright 2025 KGS Lab. NAGASAWA Takahiro
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Endpoint, Environment, StorageService } from "@matter/main";
-import { OnOffLightDevice } from "@matter/main/devices/on-off-light";
+import { Endpoint } from "@matter/main";
+import { OnOffLightDevice } from "@matter/main/devices";
 import { Gpio } from "pigpio";
 import * as Consts from "./consts.js"
 
@@ -17,12 +17,6 @@ const GPIO_SW_TOGGLE_LIGHT = 17;
 const GPIO_DEV_LIGHT = 27;
 /**照明インジケータLEDのGPIOピンNo */
 const GPIO_IND_LIGHT = 18;
-
-const BTN_LIGHT = new Gpio(GPIO_SW_TOGGLE_LIGHT, {
-  mode: Gpio.INPUT,
-  pullUpDown: Gpio.PUD_UP,
-  alert: true,
-});
 
 const DEV_LIGHT = new Gpio(GPIO_DEV_LIGHT, {
   mode: Gpio.OUTPUT,
@@ -53,6 +47,14 @@ LightEndpoint.events.onOff.onOff$Changed.on((swOn: any) => {
   }
 });
 
+/**
+ * 照明ボタンのGPIO.
+ */
+const BTN_LIGHT = new Gpio(GPIO_SW_TOGGLE_LIGHT, {
+  mode: Gpio.INPUT,
+  pullUpDown: Gpio.PUD_UP,
+  alert: true,
+});
 /**
  * 照明ボタンの設定.
  * GLITCH_INTERVAL_NS以下の信号は無視.
@@ -88,9 +90,3 @@ function switchOff() {
   DEV_LIGHT.digitalWrite(0);
   IND_LIGHT.digitalWrite(1);
 }
-
-const environment = Environment.default;
-
-const storageService = environment.get(StorageService);
-console.log(`Storage location: ${storageService.location} (Directory)`);
-const deviceStorage = (await storageService.open("device")).createContext("light");
