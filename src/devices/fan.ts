@@ -10,7 +10,7 @@ import { Endpoint } from "@matter/main";
 import { OnOffPlugInUnitDevice } from "@matter/main/devices";
 import { Gpio } from "pigpio";
 
-import * as Consts from "./consts.js"
+import * as Consts from "./consts.js";
 
 /**換気扇スイッチのGPIOピンNo */
 const GPIO_SW_TOGGLE_FAN = 22;
@@ -36,7 +36,7 @@ const IND_FAN = new Gpio(GPIO_IND_FAN, {
  * 照明用エンドポイントを作成.
  */
 export const FanEndpoint = new Endpoint(OnOffPlugInUnitDevice, {
-  id: 'fan'
+  id: "fan",
 });
 
 /**
@@ -69,13 +69,17 @@ BTN_FAN.glitchFilter(Consts.GLITCH_INTERVAL_NS);
 BTN_FAN.on("alert", async (level: any, tickl: any) => {
   if (level == 0) {
     const onOffValue = FanEndpoint.state.onOff.onOff;
-    console.log(`Push HW Btn. Fan is ${onOffValue ? "ON" : "OFF"} to ${!onOffValue ? "ON" : "OFF"}`);
+    console.log(
+      `Push HW Btn. Fan is ${onOffValue ? "ON" : "OFF"} to ${
+        !onOffValue ? "ON" : "OFF"
+      }`
+    );
     await FanEndpoint.set({
       onOff: {
-          onOff: !onOffValue,
+        onOff: !onOffValue,
       },
     });
-  } 
+  }
 });
 
 /**

@@ -14,8 +14,8 @@ import {
   WindowCoveringServer,
 } from "@matter/main/behaviors/window-covering";
 import { Gpio } from "pigpio";
-import * as Consts from "./consts.js"
-import {HCSR04} from "../sensors/hcsr04.js"
+import * as Consts from "./consts.js";
+import { HCSR04 } from "../sensors/hcsr04.js";
 
 /** シャッター開ボタンのGPIOピンNo */
 const GPIO_BTN_SHUTTER_OPEN = 5;
@@ -50,8 +50,10 @@ const SENSOR = new HCSR04(GPIO_HCSR04_TRIGGER, GPIO_HCSR04_ECHO);
 /**
  * シャッターのイベントを受ける用のサーバ
  */
-class ShutterServer extends WindowCoveringServer.with("Lift", "PositionAwareLift") {
-
+class ShutterServer extends WindowCoveringServer.with(
+  "Lift",
+  "PositionAwareLift"
+) {
   /**
    * シャッターを開ける
    */
@@ -102,7 +104,9 @@ class ShutterServer extends WindowCoveringServer.with("Lift", "PositionAwareLift
    * シャッター停止
    */
   override handleStopMovement() {
-    if (this.state.operationalStatus.lift != WindowCovering.MovementStatus.Stopped){
+    if (
+      this.state.operationalStatus.lift != WindowCovering.MovementStatus.Stopped
+    ) {
       // シャッター動作中であれば、いずれかのボタン操作で停止する
       this.openShutter();
     }
@@ -127,9 +131,12 @@ class ShutterServer extends WindowCoveringServer.with("Lift", "PositionAwareLift
 /**
  * 照明用エンドポイントを作成.
  */
-export const ShutterEndpoint = new Endpoint(WindowCoveringDevice.with(ShutterServer), {
-  id: 'shutter'
-});
+export const ShutterEndpoint = new Endpoint(
+  WindowCoveringDevice.with(ShutterServer),
+  {
+    id: "shutter",
+  }
+);
 
 /** シャッター開ボタンのGPIO */
 const BTN_SHUTTER_OPEN = new Gpio(GPIO_BTN_SHUTTER_OPEN, {
@@ -141,23 +148,25 @@ BTN_SHUTTER_OPEN.glitchFilter(Consts.GLITCH_INTERVAL_NS);
 BTN_SHUTTER_OPEN.on("alert", async (level: any, tickl: any) => {
   if (level == 0) {
     console.log("Push Shutter Open Button");
-    if (ShutterEndpoint.state.windowCovering.operationalStatus.lift == WindowCovering.MovementStatus.Stopped) {
+    if (
+      ShutterEndpoint.state.windowCovering.operationalStatus.lift ==
+      WindowCovering.MovementStatus.Stopped
+    ) {
       await ShutterEndpoint.set({
         windowCovering: {
           operationalStatus: {
             lift: WindowCovering.MovementStatus.Opening,
           },
-        }
+        },
       });
       // シャッター開度測定開始
-
     } else {
       await ShutterEndpoint.set({
         windowCovering: {
           operationalStatus: {
             lift: WindowCovering.MovementStatus.Stopped,
           },
-          }
+        },
       });
     }
   }
@@ -173,13 +182,16 @@ BTN_SHUTTER_CLOSE.glitchFilter(Consts.GLITCH_INTERVAL_NS);
 BTN_SHUTTER_CLOSE.on("alert", async (level: any, tickl: any) => {
   if (level == 0) {
     console.log("Push Shutter Close Button");
-    if (ShutterEndpoint.state.windowCovering.operationalStatus.lift == WindowCovering.MovementStatus.Stopped) {
+    if (
+      ShutterEndpoint.state.windowCovering.operationalStatus.lift ==
+      WindowCovering.MovementStatus.Stopped
+    ) {
       await ShutterEndpoint.set({
-        windowCovering:{
+        windowCovering: {
           operationalStatus: {
             lift: WindowCovering.MovementStatus.Closing,
           },
-        }
+        },
       });
       // シャッター開度測定開始
     } else {
@@ -188,7 +200,7 @@ BTN_SHUTTER_CLOSE.on("alert", async (level: any, tickl: any) => {
           operationalStatus: {
             lift: WindowCovering.MovementStatus.Stopped,
           },
-        }
+        },
       });
     }
   }

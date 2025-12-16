@@ -8,7 +8,7 @@
 import { Endpoint } from "@matter/main";
 import { OnOffLightDevice } from "@matter/main/devices";
 import { Gpio } from "pigpio";
-import * as Consts from "./consts.js"
+import * as Consts from "./consts.js";
 
 /**照明スイッチのGPIOピンNo */
 const GPIO_SW_TOGGLE_LIGHT = 17;
@@ -32,7 +32,7 @@ const IND_LIGHT = new Gpio(GPIO_IND_LIGHT, {
  * 照明用エンドポイントを作成.
  */
 export const LightEndpoint = new Endpoint(OnOffLightDevice, {
-  id: 'light'
+  id: "light",
 });
 
 /**
@@ -66,13 +66,17 @@ BTN_LIGHT.glitchFilter(Consts.GLITCH_INTERVAL_NS);
 BTN_LIGHT.on("alert", async (level: any, tickl: any) => {
   if (level == 0) {
     const onOffValue = LightEndpoint.state.onOff.onOff;
-    console.log(`Push HW Btn. Light is ${onOffValue ? "ON" : "OFF"} to ${!onOffValue ? "ON" : "OFF"}`);
+    console.log(
+      `Push HW Btn. Light is ${onOffValue ? "ON" : "OFF"} to ${
+        !onOffValue ? "ON" : "OFF"
+      }`
+    );
     await LightEndpoint.set({
       onOff: {
-          onOff: !onOffValue,
+        onOff: !onOffValue,
       },
     });
-  } 
+  }
 });
 
 /**

@@ -30,7 +30,7 @@ import { FanDevice } from "@matter/main/devices/fan";
 
 import { ShutterEndpoint } from "./devices/shutter.js";
 import { LightEndpoint } from "./devices/light.js";
-import { FanEndpoint } from "./devices/fan.js"
+import { FanEndpoint } from "./devices/fan.js";
 
 const environment = Environment.default;
 const storage = environment.get(StorageService);
@@ -82,11 +82,8 @@ await server.run();
  * 設定取得
  */
 async function getConfiguration() {
-
   console.log(`Storage location: ${storage.location} (Directory)`);
-  const deviceStorage = (await storage.open("device")).createContext(
-    "data"
-  );
+  const deviceStorage = (await storage.open("device")).createContext("data");
 
   const deviceName = "GarageManage";
   const vendorName = "KGS Lab.";
