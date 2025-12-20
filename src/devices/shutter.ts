@@ -32,6 +32,9 @@ const GPIO_HCSR04_TRIGGER = 12;
 /** HC-SR04のエコーピンのGPIOピンNo */
 const GPIO_HCSR04_ECHO = 13;
 
+/** ％指定時の動作判定誤差 */
+const MOVE_PCT = 500;
+
 /** 実機側シャッター開ボタンのGPIO */
 const DEV_SHUTTER_OPEN = new Gpio(GPIO_DEV_SHUTTER_OPEN, {
   mode: Gpio.OUTPUT,
@@ -47,13 +50,49 @@ const DEV_SHUTTER_CLOSE = new Gpio(GPIO_DEV_SHUTTER_CLOSE, {
 /** HC-SR04センサー */
 const SENSOR = new HCSR04(GPIO_HCSR04_TRIGGER, GPIO_HCSR04_ECHO);
 
+/** 距離計測間隔(ms) */
+const MEASUREMENT_INTERVAL = 100;
 /**
  * シャッターのイベントを受ける用のサーバ
  */
 class ShutterServer extends WindowCoveringServer.with(
-  "Lift",
-  "PositionAwareLift"
+  WindowCovering.Feature.Lift,
+  WindowCovering.Feature.PositionAwareLift
 ) {
+  /**
+   * コンストラクタ
+   */
+  constructor() {
+    // キャリブレーションに対応する
+    this.internal.supportsCalibration = true;
+
+    type = WindowCovering.WindowCoveringType.Shutter;
+    endProductType = WindowCovering.EndProductType.RollerShutter;
+  }
+
+  override initialize(): MaybePromise {
+    const promise = super.initialize();
+    const configStatus = this.state.configStatus;
+
+    this.state.configStatus.shutterPosTop = 5;
+    this.state.configStatus.shutterPosBotton = 200;
+
+    if (!isDeepEqual(configStatus, this.state.configStatus)) {
+      this.state.configStatus = configStatus;
+    }
+    const state = this.state;
+    // 距離計測
+    setInterval(async () => {
+      const distance = await SENSOR.getDistanceCm();
+      const shutterPosTop = state.configStatus.shutterPosTop;
+      const shutterPosBotton = state.configStatus.shutterPosBotton;
+
+      state.currentPositionLiftPercentage =
+        (distance - shutterPosTop) / (shutterPosBotton - shutterPosTop);
+    }, MEASUREMENT_INTERVAL);
+    return promise;
+  }
+  
   /**
    * シャッターを開ける
    */
@@ -79,24 +118,54 @@ class ShutterServer extends WindowCoveringServer.with(
     direction: MovementDirection,
     targetPercent100ths?: number
   ) {
-    console.log(
-      "Move shatter",
-      direction === MovementDirection.Open ? "Open" : "Close",
-      targetPercent100ths !== undefined ? `${targetPercent100ths / 100}%` : ""
-    );
+    if (this.internal.disableOperationalModeHandling) {
+      return;
+    }
+    if (type === MovementType.Lift && this.features.positionAwareLift) {
+      const currentPosition = this.state.currentPositionLiftPercentage;
+      const directionInfo =
+        direction === MovementDirection.DefinedByPosition
+          ? ` in direction by position`
+          : ` in direction ${
+              direction === MovementDirection.Close ? "Close" : "Open"
+            }`;
+      const targetInfo =
+        targetPercent100ths === undefined
+          ? ""
+          : ` ${(currentPosition / 100).toFixed(2)}% to target position ${(
+              targetPercent100ths / 100
+            ).toFixed(2)}`;
+      console.log(
+        `Moving the Shutter Lift${directionInfo} (reversed=${reversed})${targetInfo}`
+      );
 
-    switch (direction) {
-      case MovementDirection.Open:
-        // シャッターを開く
-        this.openShutter();
-        break;
-      case MovementDirection.Close:
-        // シャッターを閉じる
-        this.closeShutter();
-        break;
-      case MovementDirection.DefinedByPosition:
-        // 指定距離までシャッターを動かす
-        break;
+      switch (direction) {
+        case MovementDirection.Open:
+          // シャッターを開く
+          this.openShutter();
+          break;
+        case MovementDirection.Close:
+          // シャッターを閉じる
+          this.closeShutter();
+          break;
+        case MovementDirection.DefinedByPosition:
+          // 指定開度までシャッターを動かす
+          if (
+            currentPosition - MOVE_PCT < targetPercent100ths &&
+            currentPosition + MOVE_PCT > targetPercent100ths
+          ) {
+            // 現在開度と指定開度がMOVE_PCT%以内の差なら動かない
+          } else if (currentPosition < targetPercent100ths) {
+            // 現在開度が指定開度より小さい場合は
+            // 指定開度までシャッターを開ける
+            this.openShutter();
+          } else {
+            // 現在開度が指定開度より大きい場合は
+            // 指定開度までシャッターを閉じる
+            this.closeShutter();
+          }
+          break;
+      }
     }
   }
 
