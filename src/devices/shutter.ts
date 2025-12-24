@@ -9,9 +9,7 @@ import { setInterval } from "node:timers/promises";
 import { Endpoint, StorageService } from "@matter/main";
 import { WindowCoveringDevice } from "@matter/main/devices/window-covering";
 import { WindowCovering } from "@matter/main/clusters/window-covering";
-import {
-  WindowCoveringServer,
-} from "@matter/main/behaviors/window-covering";
+import {  WindowCoveringServer } from "@matter/main/behaviors/window-covering";
 import { Gpio } from "pigpio";
 import * as Consts from "./consts.js";
 import { HCSR04 } from "../sensors/hcsr04.js";
@@ -80,6 +78,7 @@ export const ShutterEndpoint = new Endpoint(
   }
 );
 
+
 /** シャッター開ボタンのGPIO */
 const BTN_SHUTTER_OPEN = new Gpio(GPIO_BTN_SHUTTER_OPEN, {
   mode: Gpio.INPUT,
@@ -147,18 +146,6 @@ BTN_SHUTTER_CLOSE.on("alert", async (level: any, tickl: any) => {
     }
   }
 });
-
-// 1. StorageService を取得
-const storageService = await (ShutterEndpoint.env.get(StorageService)).open(`endpoint-${ShutterEndpoint.number}`);
-
-// 2. このエンドポイント専用のストレージコンテキストを取得
-// エンドポイントの番号（例: 1）に基づいた安全なストレージパスが生成されます
-const storage = storageService.createContext(`endpoint-${ShutterEndpoint.number}`);
-
-/** シャッターの動作上限(cm) */
-let shutterPosTop : number|null = await storage.get("shutter_top", 5);
-/** シャッターの動作下限(cm) */
-let shutterPosBottom : number|null = await storage.get("shutter_bottom", 210);
 
 /**
  * 指定位置への移動コマンド
